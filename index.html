@@ -1,0 +1,764 @@
+<!DOCTYPE html>
+<!--
+MIT License
+
+Copyright (c) 2024 [RockJun]
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+-->
+<html lang="zh">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no"/>
+    <title>图片加水印工具</title>
+    <style>
+        /* (样式部分与之前相同，此处省略) */
+        /* 重置浏览器默认样式 */
+        *, *::before, *::after {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Helvetica Neue', Helvetica, Arial, 'PingFang SC', 'Microsoft YaHei', sans-serif;
+            background-color: #f5f7fa;
+            color: #333;
+            line-height: 1.6;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        #container {
+            width: 100%;
+            max-width: 1000px;
+            background-color: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+            padding: 30px 40px;
+            overflow: hidden;
+        }
+
+        h1 {
+            font-size: 2.8em;
+            margin-bottom: 0.4em;
+            color: #2c3e50;
+            text-align: center;
+            font-weight: 600;
+        }
+
+        article {
+            font-size: 1.1em;
+            color: #7f8c8d;
+            line-height: 1.7;
+            margin-bottom: 2.5em;
+            text-align: center;
+        }
+
+        article a {
+            color: #3498db;
+            text-decoration: none;
+            transition: color 0.3s ease;
+        }
+
+        article a:hover {
+            color: #2980b9;
+        }
+
+        /* 步骤标题 */
+        .step-title {
+            display: block;
+            font-size: 1.4em;
+            font-weight: 500;
+            color: #34495e;
+            margin-bottom: 1em;
+            border-bottom: 2px solid #3498db;
+            padding-bottom: 0.5em;
+        }
+
+        /* 文件拖拽及选择区域 */
+        .file-input-area {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 40px 20px;
+            border: 3px dashed #bdc3c7;
+            border-radius: 10px;
+            background-color: #ecf0f1;
+            cursor: pointer;
+            transition: background-color 0.3s ease, border-color 0.3s ease;
+            text-align: center;
+        }
+
+        .file-input-area:hover {
+            background-color: #d5d9db;
+            border-color: #3498db;
+        }
+
+        /* 隐藏文件选择 */
+        #image {
+            display: none;
+        }
+
+        /* 文件选择区域文字 */
+        .file-input-area .drag-text {
+            font-size: 1.2em;
+            color: #7f8c8d;
+            margin-bottom: 15px;
+        }
+
+        /* 按钮样式 */
+        .button {
+            background-color: #3498db;
+            color: white;
+            padding: 12px 24px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 1.1em;
+            font-weight: 500;
+            transition: background-color 0.3s ease;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        }
+
+        .button:hover {
+            background-color: #2980b9;
+        }
+
+        /* 文本输入框 */
+        #text {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #bdc3c7;
+            border-radius: 6px;
+            font-size: 1.1em;
+            transition: border-color 0.3s ease;
+        }
+
+        #text:focus {
+            border-color: #3498db;
+            outline: none;
+        }
+
+        /* 设置区域 */
+        .settings-group {
+            margin-bottom: 2em;
+            padding-bottom: 2em;
+            border-bottom: 1px solid #ecf0f1;
+        }
+
+        /* 使用网格布局 */
+        .slider-group {
+            display: grid;
+            grid-template-columns: 120px 1fr;
+            grid-gap: 10px;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .settings-group > * {
+            margin-right: 1em;
+            margin-bottom: 0.5em;
+        }
+
+        .settings-group:last-child {
+            border-bottom: none;
+            padding-bottom: 0;
+        }
+
+        /* 标签 */
+        .settings-group label {
+            color: #333;
+            font-size: 1.1em;
+            font-weight: 500;
+            margin-right: 0.5em;
+        }
+
+        /* 滑块 */
+        .settings-group input[type="range"] {
+            width: 180px;
+            accent-color: #3498db;
+        }
+
+        /* 选择框 */
+        #fontSelect {
+            padding: 10px;
+            border: 1px solid #bdc3c7;
+            border-radius: 6px;
+            font-size: 1em;
+            margin-right: 0.5em;
+            appearance: none;
+            -webkit-appearance: none;
+            -moz-appearance: none;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='6' viewBox='0 0 12 6'%3E%3Cpath fill='%233498db' d='M0 0l6 6 6-6z'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 10px center;
+            background-size: 12px 6px;
+            padding-right: 30px;
+            cursor: pointer;
+            transition: border-color 0.3s ease;
+        }
+
+        #fontSelect:focus {
+            border-color: #3498db;
+            outline: none;
+        }
+
+        /* 切换按钮 */
+        .toggle-button {
+            display: inline-block;
+            padding: 8px 16px;
+            background-color: #ecf0f1;
+            border: 1px solid #bdc3c7;
+            border-radius: 6px;
+            cursor: pointer;
+            user-select: none;
+            transition: background-color 0.3s ease, border-color 0.3s ease, color 0.3s ease;
+            font-weight: 500;
+        }
+
+        .toggle-button.active {
+            background-color: #3498db;
+            color: white;
+            border-color: #3498db;
+        }
+
+        /* 画布预览区域 */
+        #graph {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            grid-gap: 25px;
+            margin-top: 2em;
+        }
+
+        .canvas-container {
+            position: relative;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            border: none;
+            border-radius: 8px;
+            overflow: hidden;
+            background-color: #f8f9fa;
+            min-height: 150px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+        }
+
+        canvas {
+            max-width: 100%;
+            max-height: 600px;
+            display: block;
+            border-radius: 8px;
+            cursor: pointer;
+            box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1);
+            transition: transform 0.2s ease;
+        }
+
+        canvas:hover {
+            transform: scale(1.03);
+        }
+
+        /* 错误信息 - 默认隐藏 */
+        .canvas-error-message {
+            display: none;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: #e74c3c;
+            background-color: rgba(255, 255, 255, 0.95);
+            padding: 15px 20px;
+            border: 2px solid #e74c3c;
+            border-radius: 8px;
+            z-index: 10;
+            text-align: center;
+            font-size: 1.1em;
+            font-weight: 500;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        /* 显示错误信息的类 */
+        .show-error {
+            display: block !important;
+        }
+
+        /* 加载指示器 */
+        .loading-indicator {
+            display: none;
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            padding: 20px 30px;
+            background-color: rgba(0, 0, 0, 0.7);
+            color: white;
+            border-radius: 10px;
+            z-index: 1000;
+            font-size: 1.2em;
+            font-weight: 500;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+        }
+
+        /* 图片加载指示器 */
+        .image-loading {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(200, 200, 200, 0.8);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 5;
+            border-radius: 8px;
+        }
+
+        .image-loading span {
+            color: #333;
+            font-size: 1.2em;
+            padding: 15px 20px;
+            background-color: rgba(255, 255, 255, 0.95);
+            border-radius: 8px;
+            font-weight: 500;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        }
+
+        /* 隐藏数值显示 */
+        #label-alpha, #label-size, #label-radio,
+        #label-marginHorizon, #label-marginVertical,
+        #label-pic-quality, #label-color {
+            display: none;
+        }
+
+        /* 单选框 */
+        .radio-group {
+            display: flex;
+            align-items: center;
+        }
+
+        .radio-group label {
+            display: flex;
+            align-items: center;
+            margin-right: 15px;
+            cursor: pointer;
+        }
+
+        .radio-group input[type="radio"] {
+            margin-right: 5px;
+            appearance: none;
+            -webkit-appearance: none;
+            width: 18px;
+            height: 18px;
+            border: 2px solid #bdc3c7;
+            border-radius: 50%;
+            outline: none;
+            transition: border-color 0.3s ease;
+        }
+
+        .radio-group input[type="radio"]:checked {
+            border-color: #3498db;
+            background-color: #3498db;
+        }
+
+        .radio-group input[type="radio"]:checked::before {
+            content: "";
+            display: block;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background-color: white;
+            margin: 3px;
+        }
+    </style>
+</head>
+<body>
+<div id="container">
+    <h1>图片加水印工具</h1>
+    <article>
+        这是一个完全离线的图片水印工具，使用纯 HTML、CSS 和 JavaScript 构建。它不依赖任何后端服务器，无需担心隐私泄露。
+        <a href="https://github.com/RockJun/jiashuiyin" target="_blank">Github地址</a>
+    </article>
+
+    <!-- 文件选择区域 -->
+    <label for="image" class="file-input-area">
+        <span class="drag-text">拖拽图片到此处，或点击选择文件</span>
+        <span class="step-title">第一步：选择本地图片(可多选)</span>
+        <input type="file" id="image" accept="image/png, image/jpeg, image/webp" autocomplete="off" multiple>
+    </label>
+
+    <!-- 水印文本输入 -->
+    <div class="settings-group">
+        <label for="text" class="step-title">第二步：输入水印文字</label>
+        <input type="text" id="text" autocomplete="off" value="这里是水印文字">
+    </div>
+
+    <!-- 水印设置 -->
+    <div class="settings-group">
+        <label class="step-title">第三步：水印设置</label>
+        <div>
+            <label for="color">颜色:</label>
+            <input type="color" id="color" value="#808080">
+
+            <label for="fontSelect">字体:</label>
+            <select id="fontSelect"></select>
+
+            <!-- 加粗、斜体、交错的按钮 -->
+            <div class="toggle-button" id="boldBtn">加粗</div>
+            <div class="toggle-button" id="italicBtn">斜体</div>
+            <div class="toggle-button active" id="xxBtn">交错</div>
+        </div>
+    </div>
+
+    <div class="settings-group">
+        <div class="slider-group">
+            <label for="alpha">不透明度</label>
+            <input type="range" id="alpha" min="0" max="1" step="0.01" autocomplete="off" value="0.25">
+        </div>
+        <div class="slider-group">
+            <label for="size">字号</label>
+            <input type="range" id="size" min="0.1" max="5" step="0.01" autocomplete="off" value="0.8">
+        </div>
+        <div class="slider-group">
+            <label for="radio">角度</label>
+            <input type="range" id="radio" min="-180" max="180" step="1" autocomplete="off" value="-30">
+        </div>
+        <div class="slider-group">
+            <label for="marginHorizon">左右间隔</label>
+            <input type="range" id="marginHorizon" min="-5" max="12" step="0.1" autocomplete="off" value="1.5">
+        </div>
+        <div class="slider-group">
+            <label for="marginVertical">上下间隔</label>
+            <input type="range" id="marginVertical" min="-5" max="12" step="0.1" autocomplete="off" value="1.5">
+        </div>
+    </div>
+
+    <!-- 下载选项 -->
+    <div class="settings-group">
+        <label class="step-title">第四步：下载</label>
+        <button id="downloadAllBtn" class="button">下载全部</button>
+
+        <div class="radio-group">
+            <label><input type="radio" value="image/png" name="pic-type" class="pic-type" checked>PNG</label>
+            <label><input type="radio" value="image/jpeg" name="pic-type" class="pic-type">JPEG</label>
+            <label><input type="radio" value="image/webp" name="pic-type" class="pic-type">WebP</label>
+        </div>
+
+        <span id="pic-quality-div" style="display: none">
+            <label for="pic-quality">图像质量</label>
+            <input type="range" id="pic-quality" min="1" max="100" step="1" autocomplete="off" value="92">
+        </span>
+    </div>
+
+    <!-- 画布预览区域 -->
+    <div id="graph"></div>
+
+    <!-- 加载指示器 (全局) -->
+    <div class="loading-indicator" id="loadingIndicator">正在下载...</div>
+
+    <script src="https://cdn.jsdelivr.net/npm/dompurify@3.0.8/dist/purify.min.js"></script>
+    <script>
+        const getElement = sel => document.querySelector(sel);
+        const inputItems = ['color', 'alpha', "marginHorizon", "marginVertical", 'size', 'radio', "pic-quality"];
+        const configInputSetting = {};
+        const allCanvas = [];
+
+        const image = getElement('#image');
+        const graph = getElement('#graph');
+        const downloadAllBtn = getElement('#downloadAllBtn');
+        const loadingIndicator = getElement('#loadingIndicator');
+
+        // 按钮元素
+        const boldBtn = getElement('#boldBtn');
+        const italicBtn = getElement('#italicBtn');
+        const xxBtn = getElement('#xxBtn');
+
+        // 按钮状态
+        let isBold = false;
+        let isItalic = false;
+        let isInterlaced = true;
+
+        // 切换按钮状态
+        const toggleButtonState = (button, stateVariable) => {
+            button.classList.toggle('active');
+            return !stateVariable;
+        };
+
+        // 按钮点击事件
+        boldBtn.addEventListener('click', () => {
+            isBold = toggleButtonState(boldBtn, isBold);
+            updateWatermark();
+        });
+        italicBtn.addEventListener('click', () => {
+            isItalic = toggleButtonState(italicBtn, isItalic);
+            updateWatermark();
+        });
+        xxBtn.addEventListener('click', () => {
+            isInterlaced = toggleButtonState(xxBtn, isInterlaced);
+            updateWatermark();
+        });
+
+        // 将 Data URI 转换为 Blob 对象
+        const dataURItoBlob = (dataURI, type) => {
+            const binStr = atob((dataURI.split(','))[1]);
+            const len = binStr.length;
+            const arr = new Uint8Array(len);
+            for (let i = 0; i < len; i++) {
+                arr[i] = binStr.charCodeAt(i);
+            }
+            return new Blob([arr], { type: type });
+        };
+
+        // 字体选项 (移除了可能侵权的字体)
+        const fontOptions = [
+            "Arial", "Helvetica", "Verdana", "Georgia", "Impact", "Tahoma", // 通用系统字体
+            "Open Sans", "Roboto", "Lato", "Source Sans Pro", "Montserrat",  // Google Fonts (通常可免费商用)
+             "Noto Sans SC", "Noto Serif SC" //思源黑体，思源宋体
+        ];
+
+        const selectElement = getElement("#fontSelect");
+
+        // 填充字体选择下拉菜单
+        for (const font of fontOptions) {
+            const optionElement = document.createElement("option");
+            optionElement.value = font;
+            optionElement.textContent = font;
+            optionElement.style.fontFamily = font;
+            selectElement.appendChild(optionElement);
+        }
+        // 默认选中
+        selectElement.value = "Arial";
+
+
+        // 重新绘制画布
+        const redrawCanvas = (canvas, img) => {
+            const w = canvas.width;
+            const h = canvas.height;
+            canvas.width = w;
+            canvas.height = h;
+            canvas.getContext('2d').drawImage(img, 0, 0);
+        };
+
+        // 将画布内容下载为图像
+        const downloadCanvasAsImage = (canvas, fileName) => {
+            const type = configInputSetting["pic-type"] || "image/png";
+            const quality = parseFloat(getElement("#pic-quality").value) / 100;
+            const link = document.createElement('a');
+            const baseName = fileName.substring(0, fileName.lastIndexOf('.'));
+            const extension = type.split("/")[1];
+            link.download = `${baseName}_watermark_${Date.now()}.${extension}`;
+            const imageData = canvas.toDataURL(type, quality);
+            const blob = dataURItoBlob(imageData, type);
+            link.href = URL.createObjectURL(blob);
+            link.click();
+            URL.revokeObjectURL(link.href);
+        };
+
+        // 下载所有图片
+        const downloadAllPic = async () => {
+            downloadAllBtn.disabled = true;
+            loadingIndicator.style.display = 'block';
+
+            await Promise.all(allCanvas.map(({ canvas, fileName }) => {
+                return new Promise(resolve => {
+                    setTimeout(() => {
+                        downloadCanvasAsImage(canvas, fileName);
+                        resolve();
+                    }, 0);
+                });
+            }));
+
+            downloadAllBtn.disabled = false;
+            loadingIndicator.style.display = 'none';
+        };
+
+        // 读取文件并处理
+        const readFile = (file) => {
+            return new Promise((resolve, reject) => {
+                if (!file) {
+                    reject(new Error("没有提供文件。"));
+                    return;
+                }
+
+                const fileReader = new FileReader();
+
+                fileReader.onload = () => {
+                    const img = new Image();
+                    // 添加图像加载指示器
+                    const canvasContainer = document.createElement('div');
+                    canvasContainer.classList.add('canvas-container');
+                    const loadingDiv = document.createElement('div');
+                    loadingDiv.classList.add('image-loading');
+                    loadingDiv.innerHTML = '<span>加载中...</span>';
+                    canvasContainer.appendChild(loadingDiv);
+
+                    // 创建错误消息元素 (初始隐藏)
+                    const errorMessage = document.createElement('div');
+                    errorMessage.classList.add('canvas-error-message');
+                    canvasContainer.appendChild(errorMessage);
+
+                    img.onload = () => {
+                        const canvas = document.createElement('canvas');
+                        canvas.width = img.width;
+                        canvas.height = img.height;
+                        canvas.getContext('2d').drawImage(img, 0, 0);
+
+                        allCanvas.push({ img, canvas, fileName: file.name });
+                        drawText(canvas, img);
+
+                        // 移除加载指示器
+                        loadingDiv.remove();
+
+                        canvas.addEventListener('click', () => downloadCanvasAsImage(canvas, file.name));
+                        canvasContainer.appendChild(canvas);
+                        resolve(canvasContainer);
+                    };
+
+                    img.onerror = () => {
+                        // 图像加载失败，移除加载指示器并显示错误信息
+                        loadingDiv.remove();
+                        errorMessage.textContent = `加载图像失败: ${file.name}`;
+                        errorMessage.classList.add('show-error');
+
+                        reject(new Error(`加载图像失败: ${file.name}`));
+                        resolve(canvasContainer); // 解析，即使有错误也要创建容器
+                    };
+
+                    img.src = fileReader.result;
+                };
+
+                fileReader.onerror = () => {
+                    // 文件读取失败，直接显示错误
+                    const canvasContainer = document.createElement('div');
+                    canvasContainer.classList.add('canvas-container');
+                    const errorMessage = document.createElement('div');
+                    errorMessage.classList.add('canvas-error-message');
+                    errorMessage.textContent = `读取文件失败: ${file.name}`;
+                    errorMessage.classList.add('show-error');
+                    canvasContainer.appendChild(errorMessage);
+                    reject(new Error(`读取文件失败: ${file.name}`));
+                    resolve(canvasContainer); // 仍然解析
+                };
+
+                fileReader.readAsDataURL(file);
+            });
+        };
+
+        // 创建水印样式字符串
+        const makeStyle = () => {
+            const match = configInputSetting.color.value.match(/^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i);
+            return `rgba(${parseInt(match[1], 16)},${parseInt(match[2], 16)},${parseInt(match[3], 16)},${configInputSetting.alpha.value})`;
+        };
+
+        // 在画布上绘制水印文本
+        const drawText = (canvas, img) => {
+            redrawCanvas(canvas, img);
+            if (!canvas) return;
+
+            const textCtx = canvas.getContext('2d');
+            textCtx.fillStyle = makeStyle();
+
+            const textSize = configInputSetting.size.value * Math.max(15, (Math.min(canvas.width, canvas.height)) / 25);
+            textCtx.font = `${isBold ? "bold " : ""}${isItalic ? "italic " : ""}${textSize}px ${getElement("#fontSelect").value}`;
+            const baseWidth = textCtx.measureText('啊').width;
+            const sanitizedText = DOMPurify.sanitize(configInputSetting.text.value);
+            const textWidth = textCtx.measureText(sanitizedText).width;
+            let xAdd = textWidth + configInputSetting.marginHorizon.value * baseWidth;
+            let yAdd = textWidth + configInputSetting.marginVertical.value * baseWidth;
+            xAdd = Math.max(xAdd, 10);
+            yAdd = Math.max(yAdd, 10);
+
+            const rotation = configInputSetting.radio.value * Math.PI / 180;
+            const border = 500;
+
+            for (let i = -border; i < canvas.width + border; i += xAdd) {
+                for (let j = -border, rowCounter = 0; j < canvas.height + border; j += yAdd, rowCounter++) {
+                    textCtx.save();
+                    textCtx.translate(i + (rowCounter % 2 === 0 ? xAdd / (isInterlaced ? 2 : 1) : 0), j);
+                    textCtx.rotate(rotation);
+                    textCtx.fillText(sanitizedText, 0, 0);
+                    textCtx.restore();
+                }
+            }
+        };
+
+        // 图像选择事件
+        image.addEventListener('change', async function () {
+            const files = [...this.files];
+            if (files.length === 0) return;
+
+            allCanvas.length = 0;
+            while (graph.firstChild) {
+                graph.removeChild(graph.firstChild);
+            }
+
+            for (const file of files) {
+                if (!['image/png', 'image/jpeg', 'image/webp'].includes(file.type)) {
+                    alert(`无效的文件类型: ${file.name}。仅支持 PNG、JPG 和 WebP。`);
+                    continue;
+                }
+
+                try {
+                    const canvasContainer = await readFile(file);
+                    graph.appendChild(canvasContainer);
+                } catch (error) {
+                    console.error(error);
+                }
+            }
+        });
+
+        // 输入更改事件
+        configInputSetting["text"] = getElement('#text');
+        configInputSetting["fontSelect"] = getElement('#fontSelect');
+
+        const updateWatermark = () => {
+            allCanvas.forEach(({ canvas, img }) => drawText(canvas, img));
+        }
+
+        configInputSetting["text"].addEventListener('input', updateWatermark);
+        configInputSetting["fontSelect"].addEventListener('change', updateWatermark);
+
+        inputItems.forEach(item => {
+            const el = getElement('#' + item);
+            configInputSetting[item] = el;
+            el.addEventListener('input', updateWatermark);
+        });
+
+        // 单选按钮事件
+        const picTypeInputs = document.getElementsByClassName("pic-type");
+        for (const item of picTypeInputs) {
+            item.addEventListener('change', () => {
+                const picQuality = getElement("#pic-quality-div");
+                picQuality.style.display = "none";
+                if (item.checked) {
+                    configInputSetting["pic-type"] = item.value;
+                    if (["image/webp", "image/jpeg"].includes(item.value)) {
+                        picQuality.style.display = "";
+                    }
+                }
+            });
+        }
+    </script>
+</div>
+</body>
+</html>
